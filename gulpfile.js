@@ -77,7 +77,7 @@ gulp.task('watch', ['js', 'sass', 'html'], function() {
     gulp.start('sass');
   });
 
-  gulp.watch('./app/index.html', function() {
+  gulp.watch('./src/index.html', function() {
     gulp.start('html');
   });
 });
