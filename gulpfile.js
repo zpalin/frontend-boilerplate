@@ -12,9 +12,9 @@ var reload = browserSync.reload;
 
 
 var config = {
-  entryFile: './app/main.js',
   outputDir: './dist/',
-  outputFile: 'app.js'
+  entryFile: './src/scripts/main.js',
+  styleEntryFile: './src/styles/main.scss'
 };
 
 // BROWSERIFY INIT
@@ -33,8 +33,8 @@ function getBundler() {
 function bundle() {
   return getBundler()
     .bundle()
-    .pipe(source(config.outputFile))
-    .pipe(gulp.dest(config.outputDir))
+    .pipe(source('app.js'))
+    .pipe(gulp.dest(config.outputDir + 'scripts/'))
     .pipe(reload({ stream: true }));
 }
 
@@ -44,20 +44,28 @@ gulp.task('js', function() {
 
 // BUILD CSS
 gulp.task('sass', function() {
-  gulp.src('./app/styles/main.scss')
+  gulp.src(config.styleEntryFile)
     .pipe(sass({includePaths: ['node_modules']}))
     .on('error', function(err) { console.log('Sass Error: ' + sass.logError); })
     .pipe(rename('app.css'))
+    .pipe(gulp.dest(config.outputDir + "styles/"))
+    .pipe(reload({ stream: true }));
+});
+
+// MOVE HTML
+
+gulp.task('html', function() {
+  gulp.src('./src/index.html')
     .pipe(gulp.dest(config.outputDir))
     .pipe(reload({ stream: true }));
 });
 
 // BUILD, SERVE, WATCH
-gulp.task('watch', ['js', 'sass'], function() {
+gulp.task('watch', ['js', 'sass', 'html'], function() {
 
   browserSync({
     server: {
-      baseDir: './'
+      baseDir: config.outputDir
     }
   });
 
@@ -65,19 +73,23 @@ gulp.task('watch', ['js', 'sass'], function() {
     gulp.start('js')
   });
 
-  gulp.watch('./app/styles/**/*.scss', function () {
+  gulp.watch('./src/styles/**/*.scss', function () {
     gulp.start('sass');
+  });
+
+  gulp.watch('./app/index.html', function() {
+    gulp.start('html');
   });
 });
 
 // BUILD FOR PROD
-gulp.task('build', ['js', 'sass']);
+gulp.task('build', ['js', 'sass', 'html']);
 
 // WEB SERVER
 gulp.task('serve', function () {
   browserSync({
     server: {
-      baseDir: './'
+      baseDir: config.outputDir
     }
   });
 });
