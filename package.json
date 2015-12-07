@@ -23,6 +23,7 @@
     "watchify": "^3.6.1"
   },
   "dependencies": {
+    "ampersand-app": "^1.0.4",
     "bootstrap-sass": "^3.3.6",
     "jquery": "^2.1.4"
   }

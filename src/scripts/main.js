@@ -1,16 +1,16 @@
-// import { Person } from './model/person';
-var Person = require('./model/person')
-window.$ = require('jquery');
+var app = require('ampersand-app')
+var Person = require('./models/person')
 
-window.app = {
+window.app = app.extend({
   init () {
     var christoph = new Person('Christoph', 'Burgdorf');
     console.log(christoph.fullName);
+    console.log("hello world!");
+    // this.me = new Me()
+    // this.me.fetchInitialData()
+    // this.router = new Router()
+    // this.router.history.start()
   }
-}
-
-$(document).ready( () => {
-  console.log("hello world");
-
-  app.init()
 })
+
+app.init()

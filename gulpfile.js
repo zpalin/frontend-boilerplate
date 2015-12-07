@@ -17,6 +17,13 @@ var config = {
   styleEntryFile: './src/styles/main.scss'
 };
 
+
+// HANDLE ERRORS
+function handleErrors(err) { 
+  console.log('Error: ' + err.message); 
+  this.emit('end');
+}
+
 // BROWSERIFY INIT
 var bundler;
 function getBundler() {
@@ -33,6 +40,7 @@ function getBundler() {
 function bundle() {
   return getBundler()
     .bundle()
+    .on('error', handleErrors)
     .pipe(source('app.js'))
     .pipe(gulp.dest(config.outputDir + 'scripts/'))
     .pipe(reload({ stream: true }));
@@ -46,7 +54,7 @@ gulp.task('js', function() {
 gulp.task('sass', function() {
   gulp.src(config.styleEntryFile)
     .pipe(sass({includePaths: ['node_modules']}))
-    .on('error', function(err) { console.log('Sass Error: ' + sass.logError); })
+    .on('error', handleErrors)
     .pipe(rename('app.css'))
     .pipe(gulp.dest(config.outputDir + "styles/"))
     .pipe(reload({ stream: true }));
@@ -60,8 +68,10 @@ gulp.task('html', function() {
     .pipe(reload({ stream: true }));
 });
 
+gulp.task('assets', ['js', 'sass', 'html']);
+
 // BUILD, SERVE, WATCH
-gulp.task('watch', ['js', 'sass', 'html'], function() {
+gulp.task('watch', ['assets'], function() {
 
   browserSync({
     server: {
@@ -83,7 +93,9 @@ gulp.task('watch', ['js', 'sass', 'html'], function() {
 });
 
 // BUILD FOR PROD
-gulp.task('build', ['js', 'sass', 'html']);
+gulp.task('build', ['assets'], function() {
+  process.exit(0);
+});
 
 // WEB SERVER
 gulp.task('serve', function () {
