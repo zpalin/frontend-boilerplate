@@ -7,6 +7,7 @@ var _ = require('lodash');
 var browserSync = require('browser-sync');
 var sass = require('gulp-sass');
 var rename = require('gulp-rename');
+var modRewrite  = require('connect-modrewrite');
 
 var reload = browserSync.reload;
 
@@ -75,7 +76,12 @@ gulp.task('watch', ['assets'], function() {
 
   browserSync({
     server: {
-      baseDir: config.outputDir
+      baseDir: config.outputDir,
+      middleware: [
+        modRewrite([
+          '!\\.\\w+$ /index.html [L]'
+        ])
+      ]
     }
   });
 
