@@ -20,8 +20,8 @@
     "lodash": "^3.10.1",
     "rimraf": "^2.4.4",
     "vinyl-source-stream": "^1.1.0",
-    "watchify": "^3.6.1"
-    "connect-modrewrite": "^0.8.2",    
+    "watchify": "^3.6.1",
+    "connect-modrewrite": "^0.8.2"
   },
   "dependencies": {
     "ampersand-app": "^1.0.4",
