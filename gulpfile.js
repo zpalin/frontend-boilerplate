@@ -1,115 +1,155 @@
+// General Deps ----------------------------------------------------------------
+
 var gulp = require('gulp');
+var gutil = require('gulp-util');
+var del     = require('del');
+var _ = require('lodash');
+var browserSync = require('browser-sync').create();
+var reload = browserSync.reload;
+var plumber = require('gulp-plumber');
+var historyApiFallback = require('connect-history-api-fallback')
+
+// Script Deps -----------------------------------------------------------------
+
 var browserify = require('browserify');
 var watchify = require('watchify');
 var babelify = require('babelify');
-var source = require('vinyl-source-stream');
-var _ = require('lodash');
-var browserSync = require('browser-sync');
+var uglify = require('gulp-uglify');
+var buffer  = require('vinyl-buffer');
+var source  = require('vinyl-source-stream');
+var sourcemaps = require('gulp-sourcemaps');
+
+// Style Deps ------------------------------------------------------------------
+
 var sass = require('gulp-sass');
 var rename = require('gulp-rename');
-var modRewrite  = require('connect-modrewrite');
+var autoprefixer = require('gulp-autoprefixer');
 
-var reload = browserSync.reload;
+// File paths ------------------------------------------------------------------
 
+var DIST_DIR = 'dist/';
+var SCRIPTS_PATH = 'src/**/*.js';
+var SCRIPT_ENTRY = 'src/index.js';
+var STYLES_PATH = 'style/**/*.scss';
+var STYLE_ENTRY = 'style/main.scss';
+var IMAGES_PATH = 'images/**/*.{png,jpeg,jpg,gif,svg}';
+var STATIC_DIR = 'static/**/*';
 
-var config = {
-  outputDir: './dist/',
-  entryFile: './src/scripts/main.js',
-  styleEntryFile: './src/styles/main.scss'
-};
+// Error Handler ---------------------------------------------------------------
 
-
-// HANDLE ERRORS
-function handleErrors(err) { 
-  console.log('Error: ' + err.message); 
+function handleErrors(err) {
+  gutil.log('Error: ' + err.message);
   this.emit('end');
 }
 
-// BROWSERIFY INIT
-var bundler;
-function getBundler() {
-  if (!bundler) {
-    bundler = watchify(
-        browserify(config.entryFile, _.extend({ debug: true }, watchify.args))
-          .transform("babelify", {presets: ["es2015", "react"]})
-      );
-  }
-  return bundler;
+// Browserify ------------------------------------------------------------------
+console.log(process.env.NODE_ENV);
+var babelOpts = {
+  compact: true
 };
 
-// TRIGGER BROWSERIFY
-function bundle() {
-  return getBundler()
-    .bundle()
-    .on('error', handleErrors)
-    .pipe(source('app.js'))
-    .pipe(gulp.dest(config.outputDir + 'scripts/'))
-    .pipe(reload({ stream: true }));
+var debug = (process.env.NODE_ENV !== 'production');
+var opts = {
+  sourceMaps: debug,
+  debug: debug
+};
+
+opts = _.assign({}, opts, watchify.args);
+var b = watchify(browserify(SCRIPT_ENTRY, opts));
+b.transform(babelify.configure(babelOpts));
+
+if(process.env.NODE_ENV === 'production') {
+  console.log('Uglyfying...');
+  b.transform({
+    global: true
+  }, 'uglifyify');
 }
 
-gulp.task('js', function() {
-  return bundle();
+
+// Build Scripts ---------------------------------------------------------------
+
+gulp.task('scripts', function () {
+  if (debug) {
+    return b.bundle()
+      .on('error', handleErrors)
+      .pipe(plumber())
+      .pipe(source('app.js'))
+      .pipe(buffer())
+      .pipe(sourcemaps.init({loadMaps: true}))
+      .pipe(sourcemaps.write())
+      .pipe(gulp.dest(DIST_DIR))
+      .pipe(reload({ stream: true }));
+  } else {
+    return b.bundle()
+      .on('error', handleErrors)
+      .pipe(plumber())
+      .pipe(source('app.js'))
+      .pipe(buffer())
+      .pipe(gulp.dest(DIST_DIR))
+      .pipe(reload({ stream: true }));
+  }
 });
 
-// BUILD CSS
-gulp.task('sass', function() {
-  gulp.src(config.styleEntryFile)
-    .pipe(sass({includePaths: ['node_modules']}))
-    .on('error', handleErrors)
+// Build Styles ----------------------------------------------------------------
+
+gulp.task('styles', function () {
+  gulp.src(STYLE_ENTRY)
+    .pipe(plumber())
+    .pipe(sourcemaps.init())
+    .pipe(sass({
+      outputStyle: 'compressed',
+      includePaths: ['node_modules']
+    }))
+    .pipe(autoprefixer())
+    .pipe(sourcemaps.write())
     .pipe(rename('app.css'))
-    .pipe(gulp.dest(config.outputDir + "styles/"))
+    .pipe(gulp.dest(DIST_DIR))
+    .pipe(browserSync.stream());
+});
+
+// Move Static -----------------------------------------------------------------
+
+gulp.task('static', function () {
+  gulp.src(STATIC_DIR)
+    .pipe(gulp.dest(DIST_DIR))
     .pipe(reload({ stream: true }));
 });
 
-// MOVE HTML
+gulp.task('build', ['scripts', 'styles', 'static']);
 
-gulp.task('html', function() {
-  gulp.src('./src/index.html')
-    .pipe(gulp.dest(config.outputDir))
-    .pipe(reload({ stream: true }));
+// Clean -----------------------------------------------------------------------
+
+gulp.task('clean', function () {
+	return del.sync([
+		DIST_DIR
+	]);
 });
 
-gulp.task('assets', ['js', 'sass', 'html']);
+// Watch -----------------------------------------------------------------------
 
-// BUILD, SERVE, WATCH
-gulp.task('watch', ['assets'], function() {
+gulp.task('watch', ['build'], function () {
 
-  browserSync({
+  browserSync.init({
     server: {
-      baseDir: config.outputDir,
-      middleware: [
-        modRewrite([
-          '!\\.\\w+$ /index.html [L]'
-        ])
-      ]
+      baseDir: DIST_DIR,
+      middleware: [historyApiFallback()]
     }
   });
 
-  getBundler().on('update', function() {
-    gulp.start('js')
+  b.on('update', function () {
+    gulp.start('scripts');
   });
 
-  gulp.watch('./src/styles/**/*.scss', function () {
-    gulp.start('sass');
+  gulp.watch(STYLES_PATH, function () {
+    gulp.start('styles');
   });
 
-  gulp.watch('./src/index.html', function() {
-    gulp.start('html');
+  gulp.watch(STATIC_DIR, function () {
+    gulp.start('static');
   });
 });
 
-// BUILD FOR PROD
-gulp.task('build', ['assets'], function() {
+
+gulp.task('default', ['build'], function () {
   process.exit(0);
 });
-
-// WEB SERVER
-gulp.task('serve', function () {
-  browserSync({
-    server: {
-      baseDir: config.outputDir
-    }
-  });
-});
-
-gulp.task('default', ['watch']);
