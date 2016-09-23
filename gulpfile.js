@@ -30,8 +30,8 @@ var autoprefixer = require('gulp-autoprefixer');
 var DIST_DIR = 'dist/';
 var SCRIPTS_PATH = 'src/**/*.js';
 var SCRIPT_ENTRY = 'src/index.js';
-var STYLES_PATH = 'style/**/*.scss';
-var STYLE_ENTRY = 'style/main.scss';
+var STYLES_PATH = 'styles/**/*.scss';
+var STYLE_ENTRY = 'styles/main.scss';
 var IMAGES_PATH = 'images/**/*.{png,jpeg,jpg,gif,svg}';
 var STATIC_DIR = 'static/**/*';
 

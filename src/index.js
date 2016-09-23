@@ -5,9 +5,6 @@ import _ from 'lodash';
 
 window._ = _;
 
-import { fetchCurrentUser, logoutUser } from './actions';
-import { LOAD_CURRENT_USER } from './actions/types';
-
 import Router from './router';
 import store from './store';
 window.store = store;
